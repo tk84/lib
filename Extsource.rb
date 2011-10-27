@@ -61,7 +61,7 @@ module Tk84
       end
 
       def result id, placeholder={}
-        result = @result[id]
+        result = @result[id].dup
 
         placeholder.each_pair do |key,value|
           result.gsub! "\#{#{key}}", value

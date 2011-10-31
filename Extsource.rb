@@ -53,7 +53,7 @@ module Tk84
         res = nil
         File.open(source, 'r') do |file|
           contents = file.read
-          contents.scan /(?=^|\n)--:([\w]+)((?!\n--:[\w+])\n[^\n]*)*/ do |s|
+          contents.scan /(?=^|\n)--:([\w]+)((?:(?!\n--:[\w+])\n[^\n]*)*)/ do |s|
             id = Regexp.last_match(1).to_sym
             @result.store id, Regexp.last_match(0)
           end

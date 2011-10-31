@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 #  SQLiteConnectionExtend.rb
 #  SQLite3
@@ -10,7 +11,7 @@ class SQLite3Connection
   def prepare
     p 'huga'
   end
-  
+
   def query sql, bindings=nil, &p
     stmt = statementWithQuery sql
     stmt.bindWithDictionary bindings if bindings
@@ -25,5 +26,11 @@ class SQLite3Connection
       stmt.reset
     end
     stmt
+  end
+
+  def create_function name, &p
+    createFunction name, dataType:-1, usingBlock:Proc.new {|args|
+      p.call(*args)
+    }
   end
 end

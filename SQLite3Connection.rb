@@ -18,7 +18,17 @@ class SQLite3Connection
 
   def query sql, bindings=nil, &p
     stmt = statementWithQuery sql
-    stmt.bindWithDictionary bindings if bindings
+
+    if bindings
+      if bindings.is_a? Hash
+        stmt.bindWithDictionary bindings
+      elsif bindings.is_a? Array
+        stmt.bindWithArray bindings
+      else
+        stmt.bindObject bindings, withIndex:1
+      end
+    end
+
     if p
       while SQLITE_ROW == stmt.step
         row = []
@@ -42,7 +52,7 @@ class SQLite3Connection
     value
   end
 
-  def column sql, n=0, bindings=nil
+  def column sql, bindings=nil, n=0
     value = nil
     stmt = query sql, bindings
     if SQLITE_ROW == stmt.step
@@ -60,6 +70,19 @@ class SQLite3Connection
       stmt.reset
     end
     value
+  end
+
+  def row sql, bindings=nil, n=0
+    stmt = query sql, bindings
+
+   (n+1).times { stmt.step }
+
+    return [].instance_eval do
+      stmt.columnCount.times do |i|
+        self.push stmt.objectWithColumn(i)
+      end
+      self
+    end
   end
 
   def create_function name, &p

@@ -10,13 +10,28 @@ module Tk84
     end
 
     def method_missing type, *args
-      
-      # 第2引数 args が配列であることを想定している
-      # エラー処理を書く
+
+      # 関数名に _ （アンダースコア）が含まれている場合の処理
+      args = [].instance_eval do
+        type.scan /(^[^_]+(?=_))|[_]+([^_]+)/ do |s|
+          if Regexp.last_match 1
+            type = Regexp.last_match(1).to_sym
+          else
+            self.push Regexp.last_match(2).to_sym
+          end
+        end
+        self
+      end + args
+
+      # パーサが登録されているメソッドのみ許可
+      raise NoMethodError, "unkonwn method `#{type}:': " if
+        not @parser[type] or not @parser[type].is_a? Class
       id = args.shift
 
       if not @parsed[type][id]
         parser = @parser[type].new
+        raise NoMethodError, "The Class `#{type}:' doesn't have parse method." if
+          not parser.respond_to? :parse
         parser.parse(@source[type][id])
         @parsed[type][id] = parser
       elsif

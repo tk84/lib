@@ -12,6 +12,10 @@ class SQLite3Connection
     p 'huga'
   end
 
+  def close
+    return SQLite3ConnectionClose(connection)
+  end
+
   def query sql, bindings=nil, &p
     stmt = statementWithQuery sql
     stmt.bindWithDictionary bindings if bindings
@@ -26,6 +30,36 @@ class SQLite3Connection
       stmt.reset
     end
     stmt
+  end
+
+  def get_first_value sql, bindings=nil
+    value = nil
+    stmt = query sql, bindings
+    if SQLITE_ROW == stmt.step
+      value = stmt.objectWithColumn(0)
+      stmt.reset
+    end
+    value
+  end
+
+  def column sql, n=0, bindings=nil
+    value = nil
+    stmt = query sql, bindings
+    if SQLITE_ROW == stmt.step
+      value = stmt.objectWithColumn(n)
+      stmt.reset
+    end
+    value
+  end
+
+  def column_with_name sql, name, bindings=nil
+    value = nil
+    stmt = query sql, bindings
+    if SQLITE_ROW == stmt.step
+      value = stmt.objectWithColumnName(name)
+      stmt.reset
+    end
+    value
   end
 
   def create_function name, &p

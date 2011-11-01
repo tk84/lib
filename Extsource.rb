@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-require 'singleton'
 module Tk84
   class Extsource
-    include Singleton
 
     def initialize
       @source = {}
@@ -12,6 +10,9 @@ module Tk84
     end
 
     def method_missing type, *args
+      
+      # 第2引数 args が配列であることを想定している
+      # エラー処理を書く
       id = args.shift
 
       if not @parsed[type][id]
@@ -42,6 +43,69 @@ module Tk84
       p @source
       p @parser
       p @parsed
+    end
+  end
+
+  module Parser
+    class Srt
+      require 'nkf'
+
+      def initialize
+        @result = nil
+      end
+
+      def parse file
+        status = false
+        file = file.path if file.respond_to? :path
+
+        if FileTest.file? file and FileTest.readable? file
+          File.open file, 'r' do |file|
+            records = []
+            section = ''
+
+            file.each_line do |line|
+              line = NKF.nkf('--utf8', line)
+
+              # ファイル終端の処理
+              if file.eof?
+                section << line
+                line = "\n"
+              end
+
+              if line =~ /^(\r\n|\n)/ then
+                if section =~ /(?:^|\r?\n)(\d+)\r?\n(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})\r?\n(.*)/m then
+                  records << {
+                    seq:Regexp.last_match(1).to_i,
+                    btime:((Regexp.last_match(2).to_f * 60 * 60) +
+                      (Regexp.last_match(3).to_f * 60) +
+                      (Regexp.last_match(4).to_f * 1) +
+                      (Regexp.last_match(5).to_f / 1000)),
+                    etime:((Regexp.last_match(6).to_f * 60 * 60) +
+                      (Regexp.last_match(7).to_f * 60) +
+                      (Regexp.last_match(8).to_f * 1) +
+                      (Regexp.last_match(9).to_f / 1000)),
+                    caption:Regexp.last_match(10).chomp
+                  }
+                end
+                section = ''
+              else
+                section << line
+              end
+            end
+
+            if records.count
+              status = true
+              @result = records
+            end
+          end
+        end
+
+        status
+      end
+
+      def result
+        @result
+      end
     end
 
     class Sql
